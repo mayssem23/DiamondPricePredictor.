@@ -1,0 +1,6 @@
+import joblib
+import io
+import requests
+
+url = "https://www.dropbox.com/scl/fi/m4ma9lcasldp3w68kj57x/stacked_model.pkl?rlkey=50t7gsu2p3y3yrocjhxiwdbgy&st=uky7bgfo&dl=0"
+stack_model = joblib.load(io.BytesIO(requests.get(url).content))
