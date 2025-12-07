@@ -4,10 +4,11 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 
+
+
 # Load models
 best_xgb = joblib.load("best_xgb_model.pkl")
 best_lgb = joblib.load("best_lgb_model.pkl")
-stack_model = joblib.load("stacked_model.pkl")
 model_cols = joblib.load("model_columns.pkl")
 
 st.title("💎 Diamond Price Prediction App")
