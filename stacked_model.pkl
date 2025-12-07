@@ -1,3 +1,5 @@
+class MyStackingModel:
+
 import joblib
 import io
 import requests
