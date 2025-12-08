@@ -177,7 +177,7 @@ elif page == "Price Prediction":
 
         # SHAP Interactive Plot
         st.subheader("Feature Importance (LightGBM)")
-        explainer = shap.TreeExplainer(best_lgb)
+        explainer = shap.TreeExplainer(lightgbm_tuned)
         shap_values = explainer.shap_values(df_input)
         shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
         shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
