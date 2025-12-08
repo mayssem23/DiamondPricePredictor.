@@ -96,10 +96,10 @@ if page == "Data Dashboard":
         )
         st.plotly_chart(fig4, use_container_width=True)
 
-  # Always show dataset images with titles
+# Always show dataset images
 st.subheader("Dataset Images")
 
-# List of tuples: (Title, Image Path)
+# List of images with titles
 images = [
     ("Diamond Cut Overview", "1.png"),
     ("Diamond Color Distribution", "2.png"),
@@ -110,7 +110,7 @@ images = [
 ]
 
 for title, img in images:
-    st.markdown(f"### {title}")  # Title before the image
+    st.markdown(f"### <span style='color:#d50816'>{title}</span>", unsafe_allow_html=True)  # Red title
     try:
         st.image(img, use_column_width=True)
     except:
