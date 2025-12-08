@@ -46,7 +46,11 @@ except:
 # -------------------------------------------
 # SIDEBAR NAVIGATION
 # -------------------------------------------
-page = st.sidebar.radio("Navigation", ["Data Dashboard", "Price Prediction"])
+st.sidebar.markdown("## Navigation")
+page = st.sidebar.selectbox(
+    "Go to page:",
+    ["Data Dashboard", "Price Prediction"]
+)
 
 # -------------------------------------------
 # PAGE 1: DATA DASHBOARD
