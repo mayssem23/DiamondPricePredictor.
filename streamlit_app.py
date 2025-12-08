@@ -26,7 +26,7 @@ h1,h2,h3,h4 {color: #d50816;}
 # -------------------------------------------
 # LOAD MODELS
 # -------------------------------------------
-best_xgb = joblib.load("lightgbm_tuned_model.pkl")
+lightgbm_tuned = joblib.load("lightgbm_tuned_model.pkl")
 model_cols = joblib.load("model_columns.pkl")
 
 # -------------------------------------------
@@ -140,13 +140,11 @@ elif page == "Price Prediction":
 
     # PREDICT
     if st.button("Predict Price"):
-        lgb_price = best_lgb.predict(df_input)[0]
-        xgb_price = best_xgb.predict(df_input)[0]
+        lightgbm_tuned_price = lightgbm_tuned.predict(df_input)[0]
 
         st.subheader("Prediction Results")
         fig_bar = go.Figure(data=[
-            go.Bar(name='LightGBM', x=['Price'], y=[lgb_price], marker_color='#d50816'),
-            go.Bar(name='XGBoost', x=['Price'], y=[xgb_price], marker_color='darkred')
+            go.Bar(name='lightgbm_tuned', x=['Price'], y=[lightgbm_tuned_price], marker_color='darkred')
         ])
         fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
         st.plotly_chart(fig_bar, use_container_width=True)
