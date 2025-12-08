@@ -97,11 +97,9 @@ if page == "Data Dashboard":
         st.plotly_chart(fig4, use_container_width=True)
 
 # PAGE 1: DATA DASHBOARD
-if page == "Data Dashboard":
     st.title("Diamond Dataset Dashboard")
 
     # Always show dataset images
-    st.subheader("Dataset Images")
     images = [
         ("Feature Distributions", "1.png"),
         ("Pearson Correlation Matrix", "2.png"),
