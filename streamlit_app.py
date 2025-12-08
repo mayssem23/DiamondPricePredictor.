@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import shap
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -25,7 +26,8 @@ h1,h2,h3,h4 {color: #d50816;}
 # -------------------------------------------
 # LOAD MODELS
 # -------------------------------------------
-lightgbm_tuned = joblib.load("lightgbm_tuned_model.pkl")
+best_xgb = joblib.load("best_xgb_model.pkl")
+best_lgb = joblib.load("best_lgb_model.pkl")
 model_cols = joblib.load("model_columns.pkl")
 
 # -------------------------------------------
@@ -139,15 +141,16 @@ elif page == "Price Prediction":
 
     # PREDICT
     if st.button("Predict Price"):
-        price_pred = lightgbm_tuned.predict(df_input)[0]
+        lgb_price = best_lgb.predict(df_input)[0]
+        xgb_price = best_xgb.predict(df_input)[0]
 
-        st.subheader("Prediction Result")
-        fig = go.Figure(go.Bar(
-            x=["Predicted Price"], y=[price_pred],
-            marker_color="darkred"
-        ))
-        fig.update_layout(template="plotly_dark", title="Predicted Diamond Price")
-        st.plotly_chart(fig, use_container_width=True)
+        st.subheader("Prediction Results")
+        fig_bar = go.Figure(data=[
+            go.Bar(name='LightGBM', x=['Price'], y=[lgb_price], marker_color='#d50816'),
+            go.Bar(name='XGBoost', x=['Price'], y=[xgb_price], marker_color='darkred')
+        ])
+        fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
         # MODEL ACCURACY
         if df is not None:
@@ -155,30 +158,27 @@ elif page == "Price Prediction":
             X = X.reindex(columns=model_cols, fill_value=0)
             y = df["price"]
 
-            rmse = mean_squared_error(y, lightgbm_tuned.predict(X), squared=False)
-            mae = mean_absolute_error(y, lightgbm_tuned.predict(X))
-            r2 = r2_score(y, lightgbm_tuned.predict(X))
+            def get_metrics(model):
+                preds = model.predict(X)
+                return (
+                    mean_squared_error(y, preds, squared=False),
+                    mean_absolute_error(y, preds),
+                    r2_score(y, preds)
+                )
 
-            st.subheader("Model Accuracy (LightGBM Tuned)")
-            st.markdown(f"- **RMSE:** {rmse:.2f}")
-            st.markdown(f"- **MAE:** {mae:.2f}")
-            st.markdown(f"- **R² Score:** {r2:.2f}")
+            rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
+            rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
 
-        # FEATURE IMPORTANCE (Safe alternative to SHAP)
-        st.subheader("Feature Importance (LightGBM)")
-        importance_df = pd.DataFrame({
-            "Feature": df_input.columns,
-            "Importance": lightgbm_tuned.feature_importances_
-        })
-        fig_imp = px.bar(
-            importance_df, x="Feature", y="Importance",
-            color="Importance", color_continuous_scale="Reds",
-            template="plotly_dark", title="Feature Importance"
-        )
-        st.plotly_chart(fig_imp, use_container_width=True)
+            st.subheader("Model Accuracy")
+            metrics_df = pd.DataFrame({
+                "Model": ["LightGBM", "XGBoost"],
+                "RMSE": [rmse_lgb, rmse_xgb],
+                "MAE": [mae_lgb, mae_xgb],
+                "R²": [r2_lgb, r2_xgb]
+            })
+            st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
 
-
- # SHAP Interactive Plot
+        # SHAP Interactive Plot
         st.subheader("Feature Importance (LightGBM)")
         explainer = shap.TreeExplainer(best_lgb)
         shap_values = explainer.shap_values(df_input)
@@ -186,3 +186,4 @@ elif page == "Price Prediction":
         shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
                           color_continuous_scale="Reds", template="plotly_dark")
         st.plotly_chart(shap_fig, use_container_width=True)
+
