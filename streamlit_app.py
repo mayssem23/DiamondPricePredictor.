@@ -96,14 +96,25 @@ if page == "Data Dashboard":
         )
         st.plotly_chart(fig4, use_container_width=True)
 
-    # Always show dataset images
-    st.subheader("Dataset Images")
-    images = ["1.png","2.png","3.png","4.png","5.png","6.png"]
-    for img in images:
-        try:
-            st.image(img, use_column_width=True)
-        except:
-            st.warning(f"Image {img} not found")
+  # Always show dataset images with titles
+st.subheader("Dataset Images")
+
+# List of tuples: (Title, Image Path)
+images = [
+    ("Diamond Cut Overview", "1.png"),
+    ("Diamond Color Distribution", "2.png"),
+    ("Diamond Clarity Distribution", "3.png"),
+    ("Carat vs Price Scatter", "4.png"),
+    ("Depth vs Price Scatter", "5.png"),
+    ("Table vs Price Scatter", "6.png")
+]
+
+for title, img in images:
+    st.markdown(f"### {title}")  # Title before the image
+    try:
+        st.image(img, use_column_width=True)
+    except:
+        st.warning(f"Image {img} not found")
 
 # -------------------------------------------
 # PAGE 2: PRICE PREDICTION
