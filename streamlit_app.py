@@ -5,6 +5,28 @@ import shap
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
+st.markdown("""
+    <style>
+        body {
+            background-color: #111;
+            color: white;
+        }
+        .stSlider > div > div {
+            background: #d50816 !important;
+        }
+        .stButton button {
+            background-color: #d50816 !important;
+            color: white !important;
+            border-radius: 8px;
+            border: none;
+            padding: 8px 20px;
+            font-size: 16px;
+        }
+        .stSelectbox, .stTextInput {
+            color: white !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # -------------------------------------------
 # PAGE SETTINGS
