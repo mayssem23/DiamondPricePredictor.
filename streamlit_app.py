@@ -51,7 +51,7 @@ if page == "Data Dashboard":
 
     # Dataset Image Always Visible
     st.subheader("Dataset Image")
-    st.image("diamond_data.png", use_column_width=True)
+    st.image("7.png", use_column_width=True)
 
     if df is not None:
         st.subheader("Sample of the Data")
