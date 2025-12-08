@@ -103,12 +103,12 @@ if page == "Data Dashboard":
     # Always show dataset images
     st.subheader("Dataset Images")
     images = [
-        ("Diamond Cut Overview", "1.png"),
-        ("Diamond Color Distribution", "2.png"),
-        ("Diamond Clarity Distribution", "3.png"),
-        ("Carat vs Price Scatter", "4.png"),
-        ("Depth vs Price Scatter", "5.png"),
-        ("Table vs Price Scatter", "6.png")
+        ("Feature Distributions", "1.png"),
+        ("Pearson Correlation Matrix", "2.png"),
+        ("Model Comparison - RMSE (Lower is Better)", "3.png"),
+        ("Model Comparison - R2 Score (Higher is Better)", "4.png"),
+        ("Model Comparison - R2 Score (Higher is Better) tuned", "5.png"),
+        ("Model Comparison - RMSE (Lower is Better) Tuned", "6.png")
     ]
 
     for title, img in images:
