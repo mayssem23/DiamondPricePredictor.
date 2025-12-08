@@ -55,7 +55,7 @@ page = st.sidebar.selectbox(
 # -------------------------------------------
 # PAGE 1: DATA DASHBOARD
 # -------------------------------------------
-if page == "Data Dashboard":
+if page == "Data Dashboard ":
     st.title("Diamond Dataset Dashboard")
 
     if df is not None:
