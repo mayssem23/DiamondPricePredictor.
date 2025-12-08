@@ -1,120 +1,3 @@
-import streamlit as st
-import pandas as pd
-import joblib
-import shap
-import plotly.express as px
-import plotly.graph_objects as go
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-
-# -------------------------------------------
-# PAGE SETTINGS
-# -------------------------------------------
-st.set_page_config(
-    page_title="Diamond Price App",
-    layout="wide"
-)
-
-# Dark theme + red accent
-st.markdown("""
-<style>
-body {background-color: #121212; color: #ffffff;}
-h1,h2,h3,h4 {color: #d50816;}
-.stButton>button {background-color: #d50816; color: #ffffff; font-weight: bold;}
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------------------------
-# LOAD MODELS
-# -------------------------------------------
-lightgbm_tuned = joblib.load("lightgbm_tuned_model.pkl")
-model_cols = joblib.load("model_columns.pkl")
-
-# -------------------------------------------
-# LOAD DATASET
-# -------------------------------------------
-@st.cache_data
-def load_data():
-    df = pd.read_csv("diamonds.csv")
-    return df
-
-try:
-    df = load_data()
-except:
-    df = None
-
-# -------------------------------------------
-# SIDEBAR NAVIGATION
-# -------------------------------------------
-st.sidebar.markdown("## Navigation")
-page = st.sidebar.selectbox(
-    "Go to page:",
-    ["Data Dashboard", "Price Prediction"]
-)
-
-# -------------------------------------------
-# PAGE 1: DATA DASHBOARD
-# -------------------------------------------
-if page == "Data Dashboard":
-    st.title("Diamond Dataset Dashboard")
-
-    if df is not None:
-        # Filter options
-        st.sidebar.subheader("Filters")
-        cut_filter = st.sidebar.multiselect("Select Cut", df["cut"].unique(), default=df["cut"].unique())
-        color_filter = st.sidebar.multiselect("Select Color", df["color"].unique(), default=df["color"].unique())
-        clarity_filter = st.sidebar.multiselect("Select Clarity", df["clarity"].unique(), default=df["clarity"].unique())
-        
-        filtered_df = df[df["cut"].isin(cut_filter) & df["color"].isin(color_filter) & df["clarity"].isin(clarity_filter)]
-
-        # Scatter plot: Carat vs Price
-        st.subheader("Carat vs Price")
-        fig1 = px.scatter(
-            filtered_df, x="carat", y="price", color="clarity", hover_data=["cut", "color"],
-            color_discrete_sequence=px.colors.sequential.Reds
-        )
-        st.plotly_chart(fig1, use_container_width=True)
-
-        # Price distribution
-        st.subheader("Price Distribution by Cut")
-        fig2 = px.histogram(
-            filtered_df, x="price", nbins=50, color="cut", marginal="box",
-            color_discrete_sequence=px.colors.sequential.Reds
-        )
-        st.plotly_chart(fig2, use_container_width=True)
-
-        # Correlation heatmap
-        st.subheader("Correlation Heatmap")
-        fig3 = px.imshow(filtered_df.corr(), text_auto=True, color_continuous_scale='reds')
-        st.plotly_chart(fig3, use_container_width=True)
-
-        # Price vs Depth
-        st.subheader("Price vs Depth by Color")
-        fig4 = px.scatter(
-            filtered_df, x="depth", y="price", color="color", size="carat",
-            hover_data=["cut", "clarity"], color_discrete_sequence=px.colors.sequential.Reds
-        )
-        st.plotly_chart(fig4, use_container_width=True)
-
-    # Always show dataset images with titles
-    st.subheader("Dataset Images")
-    images = [
-        ("Feature Distributions", "1.png"),
-        ("Pearson Correlation Matrix", "2.png"),
-        ("Model Comparison - RMSE (Lower is Better)", "3.png"),
-        ("Model Comparison - R2 Score (Higher is Better)", "4.png"),
-        ("Model Comparison - R2 Score Tuned", "5.png"),
-        ("Model Comparison - RMSE Tuned", "6.png")
-    ]
-    for title, img in images:
-        st.markdown(f"### <span style='color:#d50816'>{title}</span>", unsafe_allow_html=True)
-        try:
-            st.image(img, use_column_width=True)
-        except:
-            st.warning(f"Image {img} not found")
-
-# -------------------------------------------
-# PAGE 2: PRICE PREDICTION
-# -------------------------------------------
 elif page == "Price Prediction":
     st.title("Diamond Price Prediction")
 
@@ -138,16 +21,16 @@ elif page == "Price Prediction":
     df_input = pd.get_dummies(df_input)
     df_input = df_input.reindex(columns=model_cols, fill_value=0)
 
-    # PREDICT
     if st.button("Predict Price"):
-        lightgbm_tuned_price = lightgbm_tuned.predict(df_input)[0]
+        price_pred = lightgbm_tuned.predict(df_input)[0]
 
-        st.subheader("Prediction Results")
-        fig_bar = go.Figure(data=[
-            go.Bar(name='lightgbm_tuned', x=['Price'], y=[lightgbm_tuned_price], marker_color='darkred')
-        ])
-        fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.subheader("Prediction Result")
+        fig = go.Figure(go.Bar(
+            x=["Predicted Price"], y=[price_pred],
+            marker_color="darkred"
+        ))
+        fig.update_layout(template="plotly_dark", title="Predicted Diamond Price")
+        st.plotly_chart(fig, use_container_width=True)
 
         # MODEL ACCURACY
         if df is not None:
@@ -155,43 +38,24 @@ elif page == "Price Prediction":
             X = X.reindex(columns=model_cols, fill_value=0)
             y = df["price"]
 
-            def get_metrics(model):
-                preds = model.predict(X)
-                return (
-                    mean_squared_error(y, preds, squared=False),
-                    mean_absolute_error(y, preds),
-                    r2_score(y, preds)
-                )
+            rmse = mean_squared_error(y, lightgbm_tuned.predict(X), squared=False)
+            mae = mean_absolute_error(y, lightgbm_tuned.predict(X))
+            r2 = r2_score(y, lightgbm_tuned.predict(X))
 
-            rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
-            rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
+            st.subheader("Model Accuracy (LightGBM Tuned)")
+            st.markdown(f"- **RMSE:** {rmse:.2f}")
+            st.markdown(f"- **MAE:** {mae:.2f}")
+            st.markdown(f"- **R² Score:** {r2:.2f}")
 
-            st.subheader("Model Accuracy")
-            metrics_df = pd.DataFrame({
-                "Model": ["LightGBM", "XGBoost"],
-                "RMSE": [rmse_lgb, rmse_xgb],
-                "MAE": [mae_lgb, mae_xgb],
-                "R²": [r2_lgb, r2_xgb]
-            })
-            st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
-
-import shap
-
-st.subheader("Feature Importance (LightGBM)")
-
-# Use generic Explainer (works with sklearn API models)
-explainer = shap.Explainer(lightgbm_tuned)
-shap_values = explainer(df_input)
-
-# Prepare SHAP DataFrame
-shap_df = pd.DataFrame({
-    "Feature": df_input.columns,
-    "SHAP Value": shap_values.values.mean(axis=0)  # mean impact per feature
-})
-
-# Plot
-shap_fig = px.bar(
-    shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
-    color_continuous_scale="Reds", template="plotly_dark"
-)
-st.plotly_chart(shap_fig, use_container_width=True)
+        # FEATURE IMPORTANCE (Safe alternative to SHAP)
+        st.subheader("Feature Importance (LightGBM)")
+        importance_df = pd.DataFrame({
+            "Feature": df_input.columns,
+            "Importance": lightgbm_tuned.feature_importances_
+        })
+        fig_imp = px.bar(
+            importance_df, x="Feature", y="Importance",
+            color="Importance", color_continuous_scale="Reds",
+            template="plotly_dark", title="Feature Importance"
+        )
+        st.plotly_chart(fig_imp, use_container_width=True)
