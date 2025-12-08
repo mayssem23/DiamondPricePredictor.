@@ -51,36 +51,17 @@ if page == "Data Dashboard":
 
     # Dataset Image Always Visible
     st.subheader("Dataset Image")
-    st.image("7.png", use_column_width=True)
+    st.image("1.png", use_column_width=True)  
+    st.image("2.png", use_column_width=True)
+    st.image("3.png", use_column_width=True)  
+    st.image("4.png", use_column_width=True)
+    st.image("5.png", use_column_width=True)  
+    st.image("6.png", use_column_width=True)
+    st.image("7.png", use_column_width=True)  
 
-    if df is not None:
-        st.subheader("Sample of the Data")
-        st.dataframe(df.head())
+    
 
-        # -------- GRAPHS --------
-
-        st.subheader("Carat Distribution")
-        fig = px.histogram(df, x="carat", nbins=40)
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Price Distribution")
-        fig = px.histogram(df, x="price", nbins=50)
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Carat vs Price")
-        fig = px.scatter(df, x="carat", y="price", color="cut")
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Boxplot: Price by Cut")
-        fig = px.box(df, x="cut", y="price")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Heatmap
-        st.subheader("Correlation Heatmap")
-        corr = df.corr(numeric_only=True)
-        fig = px.imshow(corr, text_auto=True, aspect="auto")
-        st.plotly_chart(fig, use_container_width=True)
-
+ 
 
 # -------------------------------------------
 # PAGE 2: PRICE PREDICTION
