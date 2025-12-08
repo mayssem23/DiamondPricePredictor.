@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import shap
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -18,24 +17,9 @@ st.set_page_config(
 # Dark theme + red accent
 st.markdown("""
 <style>
-body {
-    background-color: #121212;
-    color: #ffffff;
-}
-.stButton>button {
-    background-color: #d50816;
-    color: #ffffff;
-    font-weight: bold;
-}
-.stSlider>div>div>div>div>div {
-    color: #d50816;
-}
-.stSelectbox>div>div>div>div {
-    color: #d50816;
-}
-h1, h2, h3, h4 {
-    color: #d50816;
-}
+body {background-color: #121212; color: #ffffff;}
+h1,h2,h3,h4 {color: #d50816;}
+.stButton>button {background-color: #d50816; color: #ffffff; font-weight: bold;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -71,24 +55,41 @@ if page == "Data Dashboard":
     st.title("Diamond Dataset Dashboard")
 
     if df is not None:
-        # Scatter plot
+        # Filter options
+        st.sidebar.subheader("Filters")
+        cut_filter = st.sidebar.multiselect("Select Cut", df["cut"].unique(), default=df["cut"].unique())
+        color_filter = st.sidebar.multiselect("Select Color", df["color"].unique(), default=df["color"].unique())
+        clarity_filter = st.sidebar.multiselect("Select Clarity", df["clarity"].unique(), default=df["clarity"].unique())
+        
+        filtered_df = df[df["cut"].isin(cut_filter) & df["color"].isin(color_filter) & df["clarity"].isin(clarity_filter)]
+
+        # Scatter plot: Carat vs Price
         st.subheader("Carat vs Price")
-        fig1 = px.scatter(df, x="carat", y="price", color="clarity", hover_data=["cut", "color"])
+        fig1 = px.scatter(
+            filtered_df, x="carat", y="price", color="clarity", hover_data=["cut", "color"],
+            color_discrete_sequence=px.colors.sequential.Reds
+        )
         st.plotly_chart(fig1, use_container_width=True)
 
         # Price distribution
         st.subheader("Price Distribution by Cut")
-        fig2 = px.histogram(df, x="price", nbins=50, color="cut", marginal="box")
+        fig2 = px.histogram(
+            filtered_df, x="price", nbins=50, color="cut", marginal="box",
+            color_discrete_sequence=px.colors.sequential.Reds
+        )
         st.plotly_chart(fig2, use_container_width=True)
 
         # Correlation heatmap
         st.subheader("Correlation Heatmap")
-        fig3 = px.imshow(df.corr(), text_auto=True, color_continuous_scale='reds')
+        fig3 = px.imshow(filtered_df.corr(), text_auto=True, color_continuous_scale='reds')
         st.plotly_chart(fig3, use_container_width=True)
 
         # Price vs Depth
         st.subheader("Price vs Depth by Color")
-        fig4 = px.scatter(df, x="depth", y="price", color="color", size="carat", hover_data=["cut", "clarity"])
+        fig4 = px.scatter(
+            filtered_df, x="depth", y="price", color="color", size="carat",
+            hover_data=["cut", "clarity"], color_discrete_sequence=px.colors.sequential.Reds
+        )
         st.plotly_chart(fig4, use_container_width=True)
 
     # Always show dataset images
@@ -132,13 +133,12 @@ elif page == "Price Prediction":
         xgb_price = best_xgb.predict(df_input)[0]
 
         st.subheader("Prediction Results")
-        colA, colB = st.columns(2)
-        with colA:
-            st.markdown(f"<span style='color:#d50816;'>LightGBM Model</span>")
-            st.markdown(f"<span style='color:#d50816;font-size:18px;'>Predicted Price: ${lgb_price:,.2f}</span>", unsafe_allow_html=True)
-        with colB:
-            st.markdown(f"<span style='color:#d50816;'>XGBoost Model</span>")
-            st.markdown(f"<span style='color:#d50816;font-size:18px;'>Predicted Price: ${xgb_price:,.2f}</span>", unsafe_allow_html=True)
+        fig_bar = go.Figure(data=[
+            go.Bar(name='LightGBM', x=['Price'], y=[lgb_price], marker_color='#d50816'),
+            go.Bar(name='XGBoost', x=['Price'], y=[xgb_price], marker_color='darkred')
+        ])
+        fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
         # MODEL ACCURACY
         if df is not None:
@@ -158,13 +158,18 @@ elif page == "Price Prediction":
             rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
 
             st.subheader("Model Accuracy")
-            st.markdown(f"<span style='color:#d50816;'>LightGBM:</span> RMSE: {rmse_lgb:.2f}, MAE: {mae_lgb:.2f}, R²: {r2_lgb:.3f}", unsafe_allow_html=True)
-            st.markdown(f"<span style='color:#d50816;'>XGBoost:</span> RMSE: {rmse_xgb:.2f}, MAE: {mae_xgb:.2f}, R²: {r2_xgb:.3f}", unsafe_allow_html=True)
+            metrics_df = pd.DataFrame({
+                "Model": ["LightGBM", "XGBoost"],
+                "RMSE": [rmse_lgb, rmse_xgb],
+                "MAE": [mae_lgb, mae_xgb],
+                "R²": [r2_lgb, r2_xgb]
+            })
+            st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
 
-        # SHAP Explainability
+        # SHAP Interactive Plot
         st.subheader("Feature Importance (LightGBM)")
         explainer = shap.TreeExplainer(best_lgb)
         shap_values = explainer.shap_values(df_input)
-        fig, ax = plt.subplots()
-        shap.summary_plot(shap_values, df_input, plot_type="bar", show=False)
-        st.pyplot(fig)
+        shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
+        shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value", color_continuous_scale="Reds", template="plotly_dark")
+        st.plotly_chart(shap_fig, use_container_width=True)
