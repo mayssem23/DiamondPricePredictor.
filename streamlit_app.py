@@ -94,7 +94,7 @@ if page == "Data Dashboard":
 
     # Always show dataset images
     st.subheader("Dataset Images")
-    images = ["1.png","2.png","3.png","4.png","5.png","6.png","7.png"]
+    images = ["1.png","2.png","3.png","4.png","5.png","6.png"]
     for img in images:
         try:
             st.image(img, use_column_width=True)
