@@ -140,43 +140,7 @@ elif page == "Price Prediction":
         fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
         st.plotly_chart(fig_bar, use_container_width=True)
 
-       # ----------------- MODEL ACCURACY -----------------
-if df is not None:
-    try:
-        X = pd.get_dummies(df[["carat","cut","color","clarity","depth","table"]])
-        X = X.reindex(columns=model_cols, fill_value=0)
-        y = df["price"]
-
-        def get_metrics(model):
-            preds = model.predict(X)
-            return (
-                mean_squared_error(y, preds, squared=False),  # RMSE
-                mean_absolute_error(y, preds),               # MAE
-                r2_score(y, preds)                           # R²
-            )
-
-        rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
-        rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
-
-        st.subheader("Model Accuracy")
-
-        # Display as numbers
-        st.markdown(f"**LightGBM → RMSE:** {rmse_lgb:.2f}, **MAE:** {mae_lgb:.2f}, **R²:** {r2_lgb:.3f}")
-        st.markdown(f"**XGBoost → RMSE:** {rmse_xgb:.2f}, **MAE:** {mae_xgb:.2f}, **R²:** {r2_xgb:.3f}")
-
-        # Interactive bar chart
-        metrics_df = pd.DataFrame({
-            "Model": ["LightGBM", "XGBoost"],
-            "RMSE": [rmse_lgb, rmse_xgb],
-            "MAE": [mae_lgb, mae_xgb],
-            "R²": [r2_lgb, r2_xgb]
-        })
-        st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
-
-    except Exception as e:
-        st.error(f"Could not calculate accuracy: {e}")
-else:
-    st.warning("Dataset not loaded. Accuracy metrics cannot be displayed.")
+    
 
         # SHAP Interactive Plot
         st.subheader("Feature Importance (LightGBM)")
