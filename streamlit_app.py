@@ -131,7 +131,7 @@ elif page == "Price Prediction":
         color = st.selectbox("Color", ["J","I","H","G","F","E","D"])
         clarity = st.selectbox("Clarity", ["I1","SI2","SI1","VS2","VS1","VVS2","VVS1","IF"])
 
-    # Prepare dataframe
+    # Prepare input dataframe
     df_input = pd.DataFrame([{
         "carat": carat, "cut": cut, "color": color, "clarity": clarity,
         "depth": depth, "table": table
@@ -139,8 +139,8 @@ elif page == "Price Prediction":
     df_input = pd.get_dummies(df_input)
     df_input = df_input.reindex(columns=model_cols, fill_value=0)
 
-    # PREDICT
     if st.button("Predict Price"):
+        # Predictions
         lgb_price = best_lgb.predict(df_input)[0]
         xgb_price = best_xgb.predict(df_input)[0]
 
@@ -160,16 +160,15 @@ elif page == "Price Prediction":
 
             def get_metrics(model):
                 preds = model.predict(X)
-                return (
-                    mean_squared_error(y, preds, squared=False),
-                    mean_absolute_error(y, preds),
-                    r2_score(y, preds)
-                )
+                rmse = mean_squared_error(y, preds, squared=False)
+                mae = mean_absolute_error(y, preds)
+                r2 = r2_score(y, preds)
+                return rmse, mae, r2
 
             rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
             rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
 
-            st.subheader("Model Accuracy")
+            st.subheader("Model Accuracy Metrics")
             metrics_df = pd.DataFrame({
                 "Model": ["LightGBM", "XGBoost"],
                 "RMSE": [rmse_lgb, rmse_xgb],
@@ -178,12 +177,21 @@ elif page == "Price Prediction":
             })
             st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
 
-        # SHAP Interactive Plot
+            # Determine best model
+            best_model = "LightGBM" if rmse_lgb < rmse_xgb else "XGBoost"
+            st.markdown(f"**Most Accurate Model:** {best_model} (based on lowest RMSE)")
+
+        # SHAP Feature Importance for LightGBM
         st.subheader("Feature Importance (LightGBM)")
+        import shap
         explainer = shap.TreeExplainer(best_lgb)
         shap_values = explainer.shap_values(df_input)
-        shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
+        shap_df = pd.DataFrame({
+            "Feature": df_input.columns,
+            "SHAP Value": shap_values[0] if isinstance(shap_values, list) else shap_values
+        })
         shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
-                          color_continuous_scale="Reds", template="plotly_dark")
+                          color_continuous_scale="Reds", template="plotly_dark", title="LightGBM Feature Importance")
         st.plotly_chart(shap_fig, use_container_width=True)
+
 
