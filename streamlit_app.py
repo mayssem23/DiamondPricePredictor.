@@ -26,8 +26,7 @@ h1,h2,h3,h4 {color: #d50816;}
 # -------------------------------------------
 # LOAD MODELS
 # -------------------------------------------
-best_xgb = joblib.load("best_xgb_model.pkl")
-best_lgb = joblib.load("best_lgb_model.pkl")
+best_xgb = joblib.load("lightgbm_tuned_model.pkl")
 model_cols = joblib.load("model_columns.pkl")
 
 # -------------------------------------------
