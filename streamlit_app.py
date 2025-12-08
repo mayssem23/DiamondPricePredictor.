@@ -176,3 +176,13 @@ elif page == "Price Prediction":
             template="plotly_dark", title="Feature Importance"
         )
         st.plotly_chart(fig_imp, use_container_width=True)
+
+
+ # SHAP Interactive Plot
+        st.subheader("Feature Importance (LightGBM)")
+        explainer = shap.TreeExplainer(best_lgb)
+        shap_values = explainer.shap_values(df_input)
+        shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
+        shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
+                          color_continuous_scale="Reds", template="plotly_dark")
+        st.plotly_chart(shap_fig, use_container_width=True)
