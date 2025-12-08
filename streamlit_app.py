@@ -4,144 +4,164 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 import plotly.express as px
+import plotly.graph_objects as go
 
-# --------------------------------------------------------
-# Load trained models
-# --------------------------------------------------------
+# -------------------------------------------
+# PAGE SETTINGS
+# -------------------------------------------
+st.set_page_config(
+    page_title="Diamond Price App",
+    layout="wide",
+)
+
+# -------------------------------------------
+# LOAD MODELS
+# -------------------------------------------
 best_xgb = joblib.load("best_xgb_model.pkl")
 best_lgb = joblib.load("best_lgb_model.pkl")
 model_cols = joblib.load("model_columns.pkl")
 
-# --------------------------------------------------------
-# Sidebar Navigation
-# --------------------------------------------------------
-st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Prediction Tool", "Dataset & Visualization"])
+# -------------------------------------------
+# LOAD DATASET + ALWAYS SHOW IMAGE
+# -------------------------------------------
+@st.cache_data
+def load_data():
+    df = pd.read_csv("diamonds.csv")   # If you already have your dataset
+    return df
 
-# ========================================================
-# PAGE 1 — Prediction Tool
-# ========================================================
-if page == "Prediction Tool":
+try:
+    df = load_data()
+except:
+    df = None
+
+# -------------------------------------------
+# SIDEBAR NAVIGATION
+# -------------------------------------------
+page = st.sidebar.selectbox(
+    "Navigation",
+    ["Data Dashboard", "Price Prediction"]
+)
+
+# -------------------------------------------
+# PAGE 1: DATA DASHBOARD
+# -------------------------------------------
+if page == "Data Dashboard":
+
+    st.title("Diamond Dataset Overview")
+
+    # Dataset Image Always Visible
+    st.subheader("Dataset Image")
+    st.image("diamond_data.png", use_column_width=True)
+
+    if df is not None:
+        st.subheader("Sample of the Data")
+        st.dataframe(df.head())
+
+        # -------- GRAPHS --------
+
+        st.subheader("Carat Distribution")
+        fig = px.histogram(df, x="carat", nbins=40)
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("Price Distribution")
+        fig = px.histogram(df, x="price", nbins=50)
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("Carat vs Price")
+        fig = px.scatter(df, x="carat", y="price", color="cut")
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("Boxplot: Price by Cut")
+        fig = px.box(df, x="cut", y="price")
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Heatmap
+        st.subheader("Correlation Heatmap")
+        corr = df.corr(numeric_only=True)
+        fig = px.imshow(corr, text_auto=True, aspect="auto")
+        st.plotly_chart(fig, use_container_width=True)
+
+
+# -------------------------------------------
+# PAGE 2: PRICE PREDICTION
+# -------------------------------------------
+elif page == "Price Prediction":
+
     st.title("Diamond Price Prediction")
 
-    st.markdown("""
-    Adjust the parameters below and compare predicted prices between models.  
-    Accuracy of each model appears under the prediction results.
-    """)
-
-    # -----------------------------
-    # Input widgets
-    # -----------------------------
-    col1, col2 = st.columns(2)
-
+    # ----------------- INPUTS -----------------
+    col1, col2, col3 = st.columns(3)
     with col1:
         carat = st.slider("Carat", 0.2, 5.0, 1.0)
-        cut = st.selectbox("Cut", ["Fair", "Good", "Very Good", "Premium", "Ideal"])
-        clarity = st.selectbox("Clarity", ["I1","SI2","SI1","VS2","VS1","VVS2","VVS1","IF"])
-
+        depth = st.slider("Depth (%)", 55.0, 70.0, 61.0)
     with col2:
+        cut = st.selectbox("Cut", ["Fair","Good","Very Good","Premium","Ideal"])
+        table = st.slider("Table (%)", 50.0, 70.0, 57.0)
+    with col3:
         color = st.selectbox("Color", ["J","I","H","G","F","E","D"])
-        depth = st.slider("Depth %", 55.0, 70.0, 61.0)
-        table = st.slider("Table %", 50.0, 70.0, 57.0)
+        clarity = st.selectbox("Clarity", ["I1","SI2","SI1","VS2","VS1","VVS2","VVS1","IF"])
 
     # Prepare dataframe
     df_input = pd.DataFrame([{
-        "carat": carat, 
-        "cut": cut, 
-        "color": color,
-        "clarity": clarity,
-        "depth": depth,
-        "table": table
+        "carat": carat, "cut": cut, "color": color, "clarity": clarity,
+        "depth": depth, "table": table
     }])
 
     df_input = pd.get_dummies(df_input)
     df_input = df_input.reindex(columns=model_cols, fill_value=0)
 
-    # -----------------------------
-    # Predict
-    # -----------------------------
-    if st.button("Generate Predictions"):
-        st.subheader("Model Outputs")
+    # ----------------- PREDICT -----------------
+    if st.button("Predict Price"):
 
-        # LGB Prediction
         lgb_price = best_lgb.predict(df_input)[0]
-        st.write(f"**LightGBM Price:** ${lgb_price:,.2f}")
-
-        if hasattr(best_lgb, "score"):
-            st.write(f"LightGBM Accuracy: {best_lgb.score(df_input, [lgb_price]):.3f}")
-
-        st.markdown("---")
-
-        # XGB Prediction
         xgb_price = best_xgb.predict(df_input)[0]
-        st.write(f"**XGBoost Price:** ${xgb_price:,.2f}")
 
-        if hasattr(best_xgb, "score"):
-            st.write(f"XGBoost Accuracy: {best_xgb.score(df_input, [xgb_price]):.3f}")
+        st.subheader("Prediction Results")
 
-        st.markdown("---")
+        colA, colB = st.columns(2)
 
-        # SHAP — Explainability (using LGB only for clarity)
-        st.subheader("Feature Contribution (SHAP)")
+        with colA:
+            st.write("LightGBM Model")
+            st.write(f"Predicted Price: **${lgb_price:,.2f}**")
+        with colB:
+            st.write("XGBoost Model")
+            st.write(f"Predicted Price: **${xgb_price:,.2f}**")
 
+        # ----------------- MODEL ACCURACY -----------------
+        if df is not None:
+            X = pd.get_dummies(df[["carat","cut","color","clarity","depth","table"]])
+            X = X.reindex(columns=model_cols, fill_value=0)
+            y = df["price"]
+
+            from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+            def get_metrics(model):
+                preds = model.predict(X)
+                return (
+                    mean_squared_error(y, preds, squared=False),
+                    mean_absolute_error(y, preds),
+                    r2_score(y, preds)
+                )
+
+            rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
+            rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
+
+            st.subheader("Model Accuracy")
+            st.write("LightGBM:")
+            st.write(f"RMSE: {rmse_lgb:.2f}")
+            st.write(f"MAE: {mae_lgb:.2f}")
+            st.write(f"R²: {r2_lgb:.3f}")
+
+            st.write("XGBoost:")
+            st.write(f"RMSE: {rmse_xgb:.2f}")
+            st.write(f"MAE: {mae_xgb:.2f}")
+            st.write(f"R²: {r2_xgb:.3f}")
+
+        # ----------------- SHAP -----------------
+        st.subheader("Model Explainability (LightGBM)")
         explainer = shap.TreeExplainer(best_lgb)
         shap_values = explainer.shap_values(df_input)
 
         fig, ax = plt.subplots()
         shap.summary_plot(shap_values, df_input, plot_type="bar", show=False)
         st.pyplot(fig)
-
-
-# ========================================================
-# PAGE 2 — Dataset & Visualization
-# ========================================================
-elif page == "Dataset & Visualization":
-
-    st.title("Dataset Exploration")
-
-    st.markdown("""
-    Upload your dataset and image. All visualizations update automatically.  
-    The uploaded image always remains visible below.
-    """)
-
-    # ----------------------------------------------------
-    # Upload image
-    # ----------------------------------------------------
-    st.subheader("Upload an Image (PNG/JPEG)")
-    image_file = st.file_uploader("Choose an image", type=["png", "jpg", "jpeg"])
-
-    if image_file:
-        st.image(image_file, caption="Uploaded Image", use_column_width=True)
-
-    st.markdown("---")
-
-    # ----------------------------------------------------
-    # Upload dataset
-    # ----------------------------------------------------
-    st.subheader("Upload Dataset (CSV)")
-    data_file = st.file_uploader("Upload CSV file", type=["csv"], key="data_upload")
-
-    if data_file:
-        df = pd.read_csv(data_file)
-        st.write("Dataset Preview:")
-        st.dataframe(df)
-
-        st.markdown("---")
-        st.subheader("Interactive Visualizations")
-
-        # Plot 1 — Carat Distribution
-        if "carat" in df.columns:
-            fig1 = px.histogram(df, x="carat", nbins=40, title="Carat Distribution")
-            st.plotly_chart(fig1)
-
-        # Plot 2 — Price vs Carat
-        if "price" in df.columns and "carat" in df.columns:
-            fig2 = px.scatter(df, x="carat", y="price", trendline="ols",
-                              title="Carat vs Price")
-            st.plotly_chart(fig2)
-
-        # Plot 3 — Cut Distribution
-        if "cut" in df.columns:
-            fig3 = px.histogram(df, x="cut", color="cut", title="Cut Distribution")
-            st.plotly_chart(fig3)
-
