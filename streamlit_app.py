@@ -175,11 +175,19 @@ elif page == "Price Prediction":
             })
             st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
 
-        # SHAP Interactive Plot
-        st.subheader("Feature Importance (LightGBM)")
-        explainer = shap.TreeExplainer(lightgbm_tuned)
-        shap_values = explainer.shap_values(df_input)
-        shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
-        shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
-                          color_continuous_scale="Reds", template="plotly_dark")
-        st.plotly_chart(shap_fig, use_container_width=True)
+       # SHAP Interactive Plot
+st.subheader("Feature Importance (LightGBM)")
+
+explainer = shap.Explainer(lightgbm_tuned, df_input)
+shap_values = explainer(df_input)
+
+shap_df = pd.DataFrame({
+    "Feature": df_input.columns,
+    "SHAP Value": shap_values.values.mean(axis=0)
+})
+
+shap_fig = px.bar(
+    shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
+    color_continuous_scale="Reds", template="plotly_dark"
+)
+st.plotly_chart(shap_fig, use_container_width=True)
