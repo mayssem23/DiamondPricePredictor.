@@ -31,7 +31,7 @@ df_input = df_input.reindex(columns=model_cols, fill_value=0)
 
 # Predict
 if st.button("Predict Price 💰"):
-    price = stack_model.predict(df_input)[0]
+    price = best_lgb_model.predict(df_input)[0]
     st.success(f"Estimated Price: ${price:,.2f}")
 
     # SHAP explainability
