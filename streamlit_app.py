@@ -55,7 +55,7 @@ page = st.sidebar.selectbox(
 # -------------------------------------------
 # PAGE 1: DATA DASHBOARD
 # -------------------------------------------
-if page == "Data Dashboard ":
+if page == "Data Dashboard":
     st.title("Diamond Dataset Dashboard")
 
     if df is not None:
@@ -96,31 +96,22 @@ if page == "Data Dashboard ":
         )
         st.plotly_chart(fig4, use_container_width=True)
 
-# PAGE 1: DATA DASHBOARD
-    st.title("Diamond Dataset Dashboard")
-
-    # Always show dataset images
+    # Always show dataset images with titles
+    st.subheader("Dataset Images")
     images = [
         ("Feature Distributions", "1.png"),
         ("Pearson Correlation Matrix", "2.png"),
         ("Model Comparison - RMSE (Lower is Better)", "3.png"),
         ("Model Comparison - R2 Score (Higher is Better)", "4.png"),
-        ("Model Comparison - R2 Score (Higher is Better) tuned", "5.png"),
-        ("Model Comparison - RMSE (Lower is Better) Tuned", "6.png")
+        ("Model Comparison - R2 Score Tuned", "5.png"),
+        ("Model Comparison - RMSE Tuned", "6.png")
     ]
-
     for title, img in images:
         st.markdown(f"### <span style='color:#d50816'>{title}</span>", unsafe_allow_html=True)
         try:
             st.image(img, use_column_width=True)
         except:
             st.warning(f"Image {img} not found")
-
-# PAGE 2: PRICE PREDICTION
-elif page == "Price Prediction":
-    st.title("Diamond Price Prediction")
-    # ... rest of your code
-
 
 # -------------------------------------------
 # PAGE 2: PRICE PREDICTION
@@ -161,12 +152,37 @@ elif page == "Price Prediction":
         fig_bar.update_layout(title="Price Comparison", template="plotly_dark")
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    
+        # MODEL ACCURACY
+        if df is not None:
+            X = pd.get_dummies(df[["carat","cut","color","clarity","depth","table"]])
+            X = X.reindex(columns=model_cols, fill_value=0)
+            y = df["price"]
+
+            def get_metrics(model):
+                preds = model.predict(X)
+                return (
+                    mean_squared_error(y, preds, squared=False),
+                    mean_absolute_error(y, preds),
+                    r2_score(y, preds)
+                )
+
+            rmse_lgb, mae_lgb, r2_lgb = get_metrics(best_lgb)
+            rmse_xgb, mae_xgb, r2_xgb = get_metrics(best_xgb)
+
+            st.subheader("Model Accuracy")
+            metrics_df = pd.DataFrame({
+                "Model": ["LightGBM", "XGBoost"],
+                "RMSE": [rmse_lgb, rmse_xgb],
+                "MAE": [mae_lgb, mae_xgb],
+                "R²": [r2_lgb, r2_xgb]
+            })
+            st.dataframe(metrics_df.style.format("{:.2f}").set_properties(**{'color':'#d50816','font-weight':'bold'}))
 
         # SHAP Interactive Plot
         st.subheader("Feature Importance (LightGBM)")
         explainer = shap.TreeExplainer(best_lgb)
         shap_values = explainer.shap_values(df_input)
         shap_df = pd.DataFrame(list(zip(df_input.columns, shap_values[0])), columns=["Feature", "SHAP Value"])
-        shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value", color_continuous_scale="Reds", template="plotly_dark")
+        shap_fig = px.bar(shap_df, x="Feature", y="SHAP Value", color="SHAP Value",
+                          color_continuous_scale="Reds", template="plotly_dark")
         st.plotly_chart(shap_fig, use_container_width=True)
