@@ -96,25 +96,33 @@ if page == "Data Dashboard":
         )
         st.plotly_chart(fig4, use_container_width=True)
 
-# Always show dataset images
-st.subheader("Dataset Images")
+# PAGE 1: DATA DASHBOARD
+if page == "Data Dashboard":
+    st.title("Diamond Dataset Dashboard")
 
-# List of images with titles
-images = [
-    ("Diamond Cut Overview", "1.png"),
-    ("Diamond Color Distribution", "2.png"),
-    ("Diamond Clarity Distribution", "3.png"),
-    ("Carat vs Price Scatter", "4.png"),
-    ("Depth vs Price Scatter", "5.png"),
-    ("Table vs Price Scatter", "6.png")
-]
+    # Always show dataset images
+    st.subheader("Dataset Images")
+    images = [
+        ("Diamond Cut Overview", "1.png"),
+        ("Diamond Color Distribution", "2.png"),
+        ("Diamond Clarity Distribution", "3.png"),
+        ("Carat vs Price Scatter", "4.png"),
+        ("Depth vs Price Scatter", "5.png"),
+        ("Table vs Price Scatter", "6.png")
+    ]
 
-for title, img in images:
-    st.markdown(f"### <span style='color:#d50816'>{title}</span>", unsafe_allow_html=True)  # Red title
-    try:
-        st.image(img, use_column_width=True)
-    except:
-        st.warning(f"Image {img} not found")
+    for title, img in images:
+        st.markdown(f"### <span style='color:#d50816'>{title}</span>", unsafe_allow_html=True)
+        try:
+            st.image(img, use_column_width=True)
+        except:
+            st.warning(f"Image {img} not found")
+
+# PAGE 2: PRICE PREDICTION
+elif page == "Price Prediction":
+    st.title("Diamond Price Prediction")
+    # ... rest of your code
+
 
 # -------------------------------------------
 # PAGE 2: PRICE PREDICTION
